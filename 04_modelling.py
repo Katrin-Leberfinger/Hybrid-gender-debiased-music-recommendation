@@ -146,17 +146,12 @@ class LFM2bDatasetMulitpleText(Dataset):
             'target': torch.tensor(self.data_all.iloc[index]['count'], dtype=torch.float)
             }
 
-from google.colab import drive
-drive.mount('/content/drive')
-
-# Commented out IPython magic to ensure Python compatibility.
-# %cd /content/drive/MyDrive/Master\ Thesis/data
 
 from model import EasyBERTModel, AMARBertEmbeddings, AMARBert, MatrixFactorizationModel
 
 """## Read Data: Lyrics """
 
-dir = "preprocessed_data_binary_movies/"
+dir = "preprocessed_data/"
 
 data_interaction = pd.read_csv(dir + "data_interaction.csv").drop(['Unnamed: 0'],axis=1)
 data_tracks_tags_lyrics = pd.read_csv(dir + "data_tracks_tags_lyrics.csv").drop(['Unnamed: 0'],axis=1)
@@ -174,15 +169,8 @@ item2pos = {v:i for i, v in enumerate(data_tracks_tags_lyrics.track_id.sort_valu
 id2user = {i:v for i, v in enumerate(data_interaction.user_id.sort_values().unique())}
 user2id = {v:i for i, v in enumerate(data_interaction.user_id.sort_values().unique())}
 
-data_interaction_test
 
 """# Performance metrics"""
-
-def get_artist_gender_diversity():
-  pass
-
-def get_coverage(df_rec, data_tracks_tags_lyrics):
-  return len(df_rec['track_id'].drop_duplicates()) / len(data_tracks_tags_lyrics['track_id'].drop_duplicates())
 
 def get_ndcg(rel_true, k):
 
@@ -205,6 +193,7 @@ BERT_MODEL_NAME = 'bert-base-uncased'
 MODEL_NAME = 'prajjwal1/bert-tiny'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Start training on {device}")
 
 import numpy as np
 item_text_embeddings_size = 128
