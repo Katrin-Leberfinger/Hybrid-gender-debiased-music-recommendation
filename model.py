@@ -3,6 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torch.autograd import Variable
 from transformers import BertConfig, BertPreTrainedModel, BertModel, BertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import pandas as pd
 import torch
 from sklearn.model_selection import train_test_split
@@ -12,7 +13,6 @@ from transformers import BertModel
 from sklearn.metrics import f1_score
 from sklearn.metrics import recall_score
 from sklearn.utils import shuffle
-import matplotlib.pyplot as plt
 import gc
 
 
@@ -36,7 +36,8 @@ class EasyBERTModel(nn.Module):
         self.classifier = nn.Linear(self.bert.config.hidden_size + 100, 1)
 
     def forward(self, user_id, input_ids, input_text_ids, attention_mask):
-        output_item = self.bert(input_text_ids, attention_mask=attention_mask).pooler_output
+        output_item = self.bert(input_text_ids, attention_mask=attention_mask)#.pooler_output
+        output_item = output_item[0][:, 0, :]
         output_user = self.embedding_user(user_id)
         output = torch.cat((output_item, output_user), 1)
         output = self.classifier(output)
@@ -73,7 +74,7 @@ class MatrixFactorizationModel(nn.Module):
         self.drop = nn.Dropout(p=0.2)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, user_id, input_ids, input_text_ids, attention_mask):
+    def forward(self, user_id, input_ids):
         y1 = self.model1_layer1(input_ids)
 
         y2 = self.model2_layer1(user_id)
@@ -162,18 +163,19 @@ class AMARBert(nn.Module):
         self.hidden_dense_layer_size = self.bert.config.hidden_size + user_embeddings_size
 
         self.model2_layer1 = nn.Embedding(self.num_users, self.user_embeddings_size)
+        nn.init.uniform_(self.model2_layer1.weight, a=0.0, b=0.05)
 
-        self.linear = nn.Linear(self.hidden_dense_layer_size, self.hidden_dense_layer_size)
-        self.relu = nn.ReLU()
-        self.linear2 = nn.Linear(self.hidden_dense_layer_size, 32)
-        self.linear3 = nn.Linear(32, 1)
+        self.linear = nn.Linear(self.hidden_dense_layer_size, 1)
+        #self.relu = nn.ReLU()
+        #self.linear2 = nn.Linear(self.hidden_dense_layer_size, 128)
+        #self.linear3 = nn.Linear(128, 1)
 
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, user_id, input_ids, input_text_ids, attention_mask):
         output = self.bert(input_text_ids, attention_mask=attention_mask)
         y1 = output[0]
-        # y1 = y1.mean(axis=2) # alterantive to CLS token, combine with y1[:,0,:] possible
+        #y1 = y1.mean(axis=1) # alterantive to CLS token, combine with y1[:,0,:] possible
         y1 = y1[:, 0, :]
         # pooled_output (=y1) is the output of the CLS token
         # "Since BERT is transformer based contextual model, the idea is [CLS] token would have captured the entire context and would be sufficient for simple downstream tasks such as classification."
@@ -185,9 +187,9 @@ class AMARBert(nn.Module):
 
         y = torch.cat([y1, y2], 1)
         y = self.linear(y)
-        y = self.relu(y)
-        y = self.linear2(y)
-        y = self.linear3(y)
+       # y = self.relu(y)
+    #    y = self.linear2(y)
+    #    y = self.linear3(y)
         return self.sigmoid(y)
 
 
