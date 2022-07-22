@@ -26,23 +26,19 @@ import matplotlib.pyplot as plt
 import gc
 from torch.utils.data import DataLoader
 import os
+
+from dataloaders import LFM2bDataset, LFM2bDatasetMF
+from model import EasyBERTModel, AMARBertEmbeddings, AMARBert, MatrixFactorizationModel
+from evaluation_metrics import get_coverage, get_ndcg
+
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 gc.collect()
 torch.cuda.empty_cache()
 
-"""# Read Data
-
-## Datasets
-"""
-
-from dataloaders import LFM2bDataset, LFM2bDatasetMF
-from model import EasyBERTModel, AMARBertEmbeddings, AMARBert, MatrixFactorizationModel
-
 """## Read Data: Lyrics """
 
 dir = "preprocessed_data_binary/"
-
 
 data_interaction = pd.read_csv(dir + "data_interaction.csv").drop(['Unnamed: 0'],axis=1)
 data_tracks_tags_lyrics = pd.read_csv(dir + "data_tracks_tags_lyrics.csv").drop(['Unnamed: 0'],axis=1)
@@ -74,26 +70,6 @@ item2pos = {v:i for i, v in enumerate(data_tracks_tags_lyrics.track_id.sort_valu
 id2user = {i:v for i, v in enumerate(data_interaction.user_id.sort_values().unique())}
 user2id = {v:i for i, v in enumerate(data_interaction.user_id.sort_values().unique())}
 
-
-"""# Performance metrics"""
-
-def get_coverage(df_rec, data_tracks_tags_lyrics):
-  return len(df_rec['track_id'].drop_duplicates()) / len(data_tracks_tags_lyrics['track_id'].drop_duplicates())
-
-def get_ndcg(rel_true, k):
-
-  rel_opt = np.zeros(len(rel_true))
-  rel_opt[:k] = 1
-  #rel_opt = rel_opt[:k]
-  #rel_true = rel_true[:k]
-
-  def _dcg(rel):
-    i = np.arange(1, len(rel)+ 1)
-    denom = np.log2(i + 1)
-    dcg = np.sum(rel / denom)
-    return dcg
-
-  return _dcg(rel_true) / _dcg(rel_opt)
 
 """# Model Training"""
 
